@@ -15,6 +15,11 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel,print_lin
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
 
+# Eh -> unit conversion factors, shared by Singlepoint_fragments and ReactionEnergy
+# (the same dict used to be written out separately in both places)
+energy_conversion_factors = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
+                    'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
+
 
 # Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
@@ -35,9 +40,12 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
         mult (int, optional): Specify mult of system. Overrides fragment charge information.
 
     Returns:
-        float: Energy
-        or
-        float,np.array : Energy and gradient array
+        ASH_Results: object with the attribute energy (float) and, if Grad is True, also
+            gradient (np.array). For a QM/MM theory the attributes qm_energy, mm_energy
+            and qmmm_energy are set as well.
+
+    Note: the theory.run method that is called inside returns bare values instead, i.e.
+    energy (float) or, with Grad=True, the tuple (energy, gradient).
     """
     if printlevel >= 1:
         print_line_with_mainheader("Singlepoint function")
@@ -145,18 +153,38 @@ def print_theories_table(theories,energies,fragment):
 
 #Pretty table of fragments and energies
 def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: ", unit='Eh'):
+    # Column contents as strings
+    formulas = [str(frag.formula) for frag in fragments]
+    labels = ["None" if frag.label is None else str(frag.label) for frag in fragments]
+    charges = [str(frag.charge) for frag in fragments]
+    mults = [str(frag.mult) for frag in fragments]
+    energystrings = ["{:.10f}".format(e) for e in energies]
+    energyheader = "Energy({})".format(unit)
+
+    # Column widths taken from the widest entry, header included. Fixed widths used to
+    # break the table whenever a formula or label was longer than the hardcoded width
+    def colwidth(header, entries):
+        return max([len(header)] + [len(entry) for entry in entries])
+
+    w_f = colwidth("Formula", formulas)
+    w_l = colwidth("Label", labels)
+    w_c = colwidth("Charge", charges)
+    w_m = colwidth("Mult", mults)
+    w_e = colwidth(energyheader, energystrings)
+    # 4 single-space column separators
+    totalwidth = w_f + w_l + w_c + w_m + w_e + 4
+
+    rowformat = "{:<" + str(w_f) + "} {:<" + str(w_l) + "} {:>" + str(w_c) + "} {:>" + str(w_m) + "} {:>" + str(w_e) + "}"
+
     print()
-    print("="*100)
+    print("="*totalwidth)
     print("{}Table of energies of each fragment:".format(tabletitle))
-    print("="*100)
-    print("{:15} {:<25} {:>7} {:>7} {:>30}".format("Formula", "Label", "Charge","Mult", f"Energy({unit})"))
-    print("-"*100)
-    for frag, e in zip(fragments,energies):
-        if frag.label==None:
-            label="None"
-        else:
-            label=frag.label
-        print("{:15} {:<25} {:>7} {:>7} {:>30.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
+    print("="*totalwidth)
+    print(rowformat.format("Formula", "Label", "Charge", "Mult", energyheader))
+    print("-"*totalwidth)
+    for formula, label, charge, mult, energystring in zip(formulas, labels, charges, mults, energystrings):
+        print(rowformat.format(formula, label, charge, mult, energystring))
+    print("-"*totalwidth)
     print()
 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
@@ -168,10 +196,20 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     print("Will run single-point calculation on each fragment")
     print("Theory:", theory.__class__.__name__)
 
-    energies=[];filenames=[]
+    #Basic checks
+    if fragments is None or len(fragments) == 0:
+        print(BC.FAIL,"Error: Singlepoint_fragments requires a list of one or more ASH fragments.", BC.END)
+        ashexit()
+    if relative_energies is True and unit not in energy_conversion_factors:
+        print(BC.FAIL,f"Error: unknown unit '{unit}' for relative energies.", BC.END)
+        print("Valid units:", ", ".join(energy_conversion_factors))
+        ashexit()
+
+    energies=[]
 
     #Looping through fragments
     for i,frag in enumerate(fragments):
+        fragment_init_time = time.time()
 
         if frag.charge == None or frag.mult == None:
             print(BC.FAIL,"Error: Singlepoint_fragments requires charge/mult information to be associated with each fragment.", BC.END)
@@ -187,6 +225,8 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
 
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
+
+        print_time_rel(fragment_init_time, modulename=f'Singlepoint_fragments fragment {i + 1}', moduleindex=1)
 
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, result.energy))
 
@@ -204,7 +244,14 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         print("")
 
     #Create Results object
-    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)
+    #NOTE: charge/mult are single-job attributes. Only set here if all fragments agree,
+    #otherwise they would report whichever fragment happened to be last.
+    charges=[f.charge for f in fragments]; mults=[f.mult for f in fragments]
+    common_charge = charges[0] if len(set(charges)) == 1 else None
+    common_mult = mults[0] if len(set(mults)) == 1 else None
+    result = ASH_Results(label="Singlepoint_fragments", energies=energies,
+                         charge=common_charge, mult=common_mult)
+    result.labels = [f.label for f in fragments]
 
     #Print table
     print_fragments_table(fragments,energies)
@@ -213,13 +260,11 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     if relative_energies is True:
         print()
         print("relative_energies option is True!")
-        conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
-        convfactor=conversionfactor[unit]
+        convfactor=energy_conversion_factors[unit]
         relenergies=[(i - min(energies)) * convfactor for i in energies]
-        print_fragments_table(fragments,relenergies, unit=unit)
+        print_fragments_table(fragments,relenergies, tabletitle="Singlepoint_fragments: relative ",
+                              unit=unit)
         result.relative_energies = relenergies
-        result.labels = [f.label for f in fragments]
 
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
@@ -294,6 +339,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
     list_of_componentsdicts=[]
     componentsdict={}
     for i,frag in enumerate(reaction.fragments):
+        fragment_init_time = time.time()
         #Orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
         try:
             theory.moreadfile=reaction.orbital_dictionary[moreadfiles][i]
@@ -306,6 +352,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
                 pass
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        print_time_rel(fragment_init_time, modulename=f'Singlepoint_reaction fragment {i + 1}', moduleindex=1)
         energy = result.energy
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         #Preserve outputfile
@@ -519,7 +566,7 @@ class ScriptTheory:
         #Execute script
         #NOTE: Script should be executable and create file called energy, file called gradient
         #Note: Should allow both full path to script or local script (should contain ./ if so)
-        p = sp.call([self.scriptpath])
+        sp.call([self.scriptpath])
 
         #Grab energy from file energy
         with open("energy") as f: self.energy = float(f.readlines()[0])
@@ -558,8 +605,7 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
     Returns:
         tuple : energy and error in chosen unit
     """
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
+    conversionfactor = energy_conversion_factors
     if label is None:
         label=''
     reactant_energy=0.0 #hartree

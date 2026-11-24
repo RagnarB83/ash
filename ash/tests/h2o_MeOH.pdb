@@ -1,0 +1,12 @@
+REMARK   1 CREATED WITH OPENMM 8.5, 2026-11-08
+HETATM    1  O   MOL A   1      -2.733  -1.766  -4.928  1.00  0.00           O  
+HETATM    2  H1  MOL A   1      -2.621  -2.546  -5.473  1.00  0.00           H  
+HETATM    3  H2  MOL A   1      -1.848  -1.517  -4.632  1.00  0.00           H  
+HETATM    4  C1  MOL A   2      -0.463   0.135  -6.063  1.00  0.00           C  
+HETATM    5  H1  MOL A   2      -0.263  -0.638  -6.808  1.00  0.00           H  
+HETATM    6  H2  MOL A   2      -1.516   0.438  -6.143  1.00  0.00           H  
+HETATM    7  H3  MOL A   2       0.179   1.002  -6.268  1.00  0.00           H  
+HETATM    8  O1  MOL A   2      -0.185  -0.424  -4.793  1.00  0.00           O  
+HETATM    9  H4  MOL A   2      -0.324   0.244  -4.110  1.00  0.00           H  
+TER      10      MOL A   2
+END

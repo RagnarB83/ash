@@ -42,7 +42,7 @@ def SellaIRC(theory=None, fragment=None, charge=None, mult=None, printlevel=2, N
 
 
 def SellaOptimizer(theory=None, fragment=None, charge=None, mult=None, printlevel=2, NumGrad=False,
-                   convergence_gmax=1e-4, maxiter=150, result_write_to_disk=False,
+                   convergence_gmax=1e-4, maxiter=150, result_write_to_disk=False, TSOpt=True,
                    constraints=None, actatoms=None, frozenatoms=None,
                    gamma=0.03, eta=1e-4):
     """
@@ -57,7 +57,7 @@ def SellaOptimizer(theory=None, fragment=None, charge=None, mult=None, printleve
     # NOTE: Class does not take fragment and theory
     optimizer = SellaoptimizerClass(convergence_gmax=convergence_gmax, 
                                    printlevel=printlevel, maxiter=maxiter, result_write_to_disk=result_write_to_disk, 
-                                   constraints=constraints, actatoms=actatoms, frozenatoms=frozenatoms,
+                                   constraints=constraints, actatoms=actatoms, frozenatoms=frozenatoms, TSOpt=TSOpt,
                                    gamma=gamma, eta=eta)
 
     # If NumGrad then we wrap theory object into NumGrad class object
@@ -77,12 +77,22 @@ def SellaOptimizer(theory=None, fragment=None, charge=None, mult=None, printleve
 class SellaoptimizerClass:
         def __init__(self,printlevel=2, 
                      convergence_gmax=3e-4, maxiter=150, result_write_to_disk=False,
-                     constraints=None, actatoms=None, frozenatoms=None,
+                     constraints=None, actatoms=None, frozenatoms=None, TSOpt=True,
                      gamma=0.03, eta=1e-4, IRC_dx=0.1):
 
             self.printlevel=printlevel
             print_line_with_mainheader("SellaOptimizer initialization")
             print_if_level("Creating optimizer object", self.printlevel,2)
+
+            # TSOpt or not. By default TSOpt is True
+            self.TSOpt=TSOpt
+            print("TSOpt:", TSOpt)
+            if self.TSOpt is False:
+                print("Setting Sella order parameter to 0")
+                self.order=0
+            else:
+                print("Setting Sella order parameter to 1")
+                self.order=1
 
             # Input maxg tolerance in Eh/Bohr
             # Converting to eV/Angstrom for Sella
@@ -224,7 +234,7 @@ class SellaoptimizerClass:
 
             # Set up a Sella Dynamics object
             dyn = Sella(
-                atoms, constraints=sella_constraints,
+                atoms, constraints=sella_constraints, order=self.order,
                 gamma=self.gamma, eta=self.eta)
 
 
@@ -260,6 +270,11 @@ class SellaoptimizerClass:
                 if conv:
                     print("Converged")
                     break
+
+            # Updating coordinates in Fragment object if using Active Region
+            if self.actatoms is not None:
+                fragment.coords = atoms.calc.full_fragment.coords
+            
             if conv is False:
                 print()
                 print(f"Sella Geometry optimization did not converge in {self.maxiter} steps. Exiting.")
@@ -290,7 +305,7 @@ class SellaoptimizerClass:
             print()
 
             #Active region XYZ-file
-            if self.actatoms is None:
+            if self.actatoms is not None:
                 write_XYZ_for_atoms(fragment.coords, fragment.elems, self.actatoms, 
                                     "Fragment-optimized_Active")
 

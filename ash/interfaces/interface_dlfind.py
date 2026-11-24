@@ -11,7 +11,7 @@ import os
 import os
 import time
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader,search_list_of_lists_for_index,print_if_level
-from ash.modules.module_coords import check_charge_mult, print_internal_coordinate_table_new,write_xyzfile,elemstonuccharges, print_coords_for_atoms
+from ash.modules.module_coords import check_charge_mult, print_internal_coordinate_table_new,write_xyzfile,elemstonuccharges, print_coords_for_atoms, fullindex_to_actindex
 from ash.modules.module_coords_PBC import write_CIF_file, write_XSF_file, write_POSCAR_file, cell_vectors_to_params, cell_volume, align_to_standard_orientation
 from ash.modules.module_theory import NumGradclass
 from ash.modules.module_results import ASH_Results
@@ -23,13 +23,13 @@ from ash.modules.module_oniom import ONIOMTheory
 
 def DLFIND_optimizer(jobtype=None, theory=None, fragment=None, fragment2=None, charge=None, mult=None, 
                      maxcycle=250, tolerance=4.5E-4, tolerance_e=1E-6,
-                     actatoms=None, frozenatoms=None, residues=None, constraints=None,
+                     actatoms=None, ActiveRegion=False, frozenatoms=None, residues=None, constraints=None,
                      printlevel=2, NumGrad=False, delta=0.01,
                      icoord=None, iopt=None, nimage=None, 
                      hessian_choice="numfreq", inithessian=0, 
                      numfreq_npoint=1, numfreq_displacement=0.005, numfreq_hessatoms=None,
                      numfreq_force_projection=None, print_atoms_list=None,
-                     force_noPBC=False, PBC_format_option='CIF'):
+                     force_noPBC=False, PBC_format_option='CIF', dump=None, restart=None):
     """
     Wrapper function around DLFIND_optimizerClass
     """
@@ -39,6 +39,7 @@ def DLFIND_optimizer(jobtype=None, theory=None, fragment=None, fragment2=None, c
         print("DLFIND_optimizer requires theoryNumFreq and fragment objects provided. Exiting.")
         ashexit()
     optimizer=DLFIND_optimizerClass(jobtype=jobtype, theory=theory, fragment=fragment, fragment2=fragment2, charge=charge, mult=mult, actatoms=actatoms,
+                                    ActiveRegion=ActiveRegion,
                                     frozenatoms=frozenatoms,residues=residues, constraints=constraints, delta=delta,
                                     printlevel=printlevel, icoord=icoord,iopt=iopt, maxcycle=maxcycle, 
                                     tolerance=tolerance,tolerance_e=tolerance_e, 
@@ -46,7 +47,7 @@ def DLFIND_optimizer(jobtype=None, theory=None, fragment=None, fragment2=None, c
                                     hessian_choice=hessian_choice, inithessian=inithessian, 
                                     numfreq_npoint=numfreq_npoint,numfreq_displacement=numfreq_displacement,
                                     numfreq_hessatoms=numfreq_hessatoms,numfreq_force_projection=numfreq_force_projection,
-                                    print_atoms_list=print_atoms_list,
+                                    print_atoms_list=print_atoms_list, dump=dump, restart=restart,
                                     force_noPBC=force_noPBC, PBC_format_option=PBC_format_option)
 
     # If NumGrad then we wrap theory object into NumGrad class object
@@ -67,12 +68,12 @@ class DLFIND_optimizerClass:
 
     def __init__(self,jobtype=None, fragment=None, fragment2=None, theory=None, charge=None, mult=None, 
                  maxcycle=250, tolerance=4.5E-4, tolerance_e=1E-6, 
-                 printlevel=2, result_write_to_disk=True, actatoms=None, frozenatoms=None, residues=None, constraints=None,
+                 printlevel=2, result_write_to_disk=True, actatoms=None, ActiveRegion=False, frozenatoms=None, residues=None, constraints=None,
                  icoord=None, iopt=None, nimage=None, delta=0.01, 
                  hessian_choice='numfreq', inithessian=None, 
                  numfreq_npoint=1,numfreq_displacement=0.005,numfreq_force_projection=None,
                  numfreq_hessatoms=None, print_atoms_list=None,
-                 force_noPBC=False, PBC_format_option='CIF'):
+                 force_noPBC=False, PBC_format_option='CIF', dump=None, restart=None):
 
         print_line_with_mainheader("DLFIND_optimizer initialization")
         print()
@@ -180,6 +181,11 @@ class DLFIND_optimizerClass:
         self.tolerance_e=tolerance_e
         # NEB
         self.nimage=nimage
+
+        # DL-FIND restart/checkpoint options
+        self.dump=dump
+        self.restart=restart
+
         #Dimer
         self.delta=delta
 
@@ -189,6 +195,10 @@ class DLFIND_optimizerClass:
         #Constraints
         self.constraints=constraints
         self.actatoms=actatoms
+        # ActiveRegion: pass only the active-region representation of the system to
+        # DL-FIND, instead of the whole system with the inactive atoms frozen.
+        # Same approach as the geomeTRIC interface (issue #520)
+        self.ActiveRegion=ActiveRegion
         self.frozenatoms=frozenatoms
 
         self.print_atoms_list=print_atoms_list
@@ -231,7 +241,10 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    if self.icoord >= 100 and self.icoord < 150:
+                        print(f"Current geometry (Å), NEB cycle {self.dlfind_neb_cycles + 1}, image {iimage} (print_atoms_list region)")
+                    else:
+                        print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(R_phys, self.elems_phys, self.print_atoms_list)
                     print("")
@@ -274,12 +287,40 @@ class DLFIND_optimizerClass:
                     ], axis=0)
                 return energy, mod_gradient
 
+            elif self.ActiveRegion is True:
+                # DL-FIND only sees the active region. Scatter the active-region coordinates
+                # back into the full system, run the theory on the full system and hand back
+                # only the active-region gradient (same as the geomeTRIC interface)
+                full_coords = self.fragment.coords
+                for act_i, curr_i in zip(self.actatoms, coordinates_ang):
+                    full_coords[act_i] = curr_i
+                self.full_current_coords = full_coords
+                self.fragment.replace_coords(self.fragment.elems, self.full_current_coords, conn=False)
+                self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
+                if self.printlevel >= 1:
+                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    print("---------------------------------------------------")
+                    print_coords_for_atoms(self.full_current_coords, self.fragment.elems, self.print_atoms_list)
+                    print("")
+                    print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
+
+                # E + G for the full system
+                energy, gradient = self.theory.run(current_coords=self.full_current_coords, elems=self.fragment.elems,
+                                                   charge=self.charge, mult=self.mult, Grad=True)
+                self.energy = energy
+                # Trim the full gradient down to the active region
+                gradient_act = np.array([gradient[i] for i in self.actatoms])
+                return energy, gradient_act
+
             else:
                 self.fragment.coords=coordinates_ang
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    if self.icoord >= 100 and self.icoord < 150:
+                        print(f"Current geometry (Å), NEB cycle {self.dlfind_neb_cycles + 1}, image {iimage} (print_atoms_list region)")
+                    else:
+                        print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(coordinates_ang, self.fragment.elems, self.print_atoms_list)
                     print("")
@@ -306,7 +347,7 @@ class DLFIND_optimizerClass:
                 *args,
                 **kwargs,
             ) -> None:
-                nvar2=self.fragment.numatoms*3
+                nvar2=self.dlfind_nvar()
                 coords_ = as_array(coords, shape=(nvar2,)).reshape((-1, 3))
                 hessian_ = as_array(hessian, shape=(nvar2,nvar2))
                 hessian = func(coords_, *args, **kwargs)
@@ -318,9 +359,16 @@ class DLFIND_optimizerClass:
         # How we get the Hessian from ASH
         @dlf_get_hessian_wrapper
         def hess_func(coords):
-            nvar=self.fragment.numatoms*3
+            nvar=self.dlfind_nvar()
             #Updating coordinates in fragment, just to be sure
-            self.fragment.coords=coords*0.5291772109303
+            if self.ActiveRegion is True:
+                # coords are active-region only: scatter into the full system
+                full_coords = self.fragment.coords
+                for act_i, curr_i in zip(self.actatoms, coords*0.5291772109303):
+                    full_coords[act_i] = curr_i
+                self.fragment.replace_coords(self.fragment.elems, full_coords, conn=False)
+            else:
+                self.fragment.coords=coords*0.5291772109303
             # Get Hessian
             #TODO: parallelization
             if type(self.hessian_choice) == np.ndarray:
@@ -338,8 +386,15 @@ class DLFIND_optimizerClass:
 
                 if self.numfreq_hessatoms is not None and len(self.numfreq_hessatoms) < self.fragment.numatoms:
                     print("A partial Hessian was computed. Approximating full Hessian from smaller Hessian")
-                    hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, 
-                                                                             self.numfreq_hessatoms, large_atomindices=self.fragment.allatoms, 
+                    # In ActiveRegion mode DL-FIND expects a Hessian for the active region only,
+                    # so the partial Hessian is expanded into the active region instead of the
+                    # whole system (issue #520)
+                    if self.ActiveRegion is True:
+                        large_atomindices=self.actatoms
+                    else:
+                        large_atomindices=self.fragment.allatoms
+                    hessian = approximate_full_Hessian_from_smaller(self.fragment,result_freq.hessian,
+                                                                             self.numfreq_hessatoms, large_atomindices=large_atomindices,
                                                                              restHessian=None)
                 else:
                     hessian = result_freq.hessian
@@ -364,6 +419,18 @@ class DLFIND_optimizerClass:
 
             elif self.hessian_choice == "random":
                 hessian = np.random.random((nvar,nvar))
+
+            # DL-FIND writes the Hessian into a buffer of nvar x nvar, so a mismatch here
+            # is a silent broadcast error further down (issue #520)
+            hessian = np.asarray(hessian)
+            if hessian.shape != (nvar, nvar):
+                print(BC.FAIL,f"Error: Hessian has shape {hessian.shape} but DL-FIND expects ({nvar}, {nvar}).",BC.END)
+                if self.ActiveRegion is True:
+                    print(f"ActiveRegion is True, so the Hessian must cover the {len(self.actatoms)} active atoms (3*{len(self.actatoms)} = {nvar}).")
+                else:
+                    print(f"The Hessian must cover all {self.fragment.numatoms} atoms of the fragment (3*{self.fragment.numatoms} = {nvar}).")
+                    print("For a large system, use ActiveRegion=True together with actatoms instead.")
+                ashexit()
             print("ASH hessian:", hessian)
 
             return hessian
@@ -371,7 +438,7 @@ class DLFIND_optimizerClass:
         # Create function to store results from DL-FIND
         #@dlf_put_coords_wrapper
         def store_results(a,nvar,switch, energy, coordinates, iam):
-            print("Called store_results with switch:", switch)
+            print("Called store_results with switch:", switch, flush=True)
             if switch > 0:
                 coords = as_array(coordinates, (nvar,)).reshape(-1, 3)
                 coordinates_ang = coords*0.5291772109303
@@ -380,9 +447,14 @@ class DLFIND_optimizerClass:
                 # Write out NEB path if switch -1
                 if self.icoord >= 100 and self.icoord < 150 and switch == -1:
                     self.dlfind_neb_cycles+=1
-                    print("="*70)
-                    print(f"DLFIND NEB-OPTIMIZATION CYCLE {self.dlfind_neb_cycles}")
-                    print("="*70)
+                    print("="*70, flush=True)
+                    print(f"DLFIND NEB-OPTIMIZATION CYCLE {self.dlfind_neb_cycles}", flush=True)
+                    print("="*70, flush=True)
+
+                    for imageid in list(range(1,self.nimage)):
+                        if imageid not in self.NEB_energies_dict or imageid not in self.NEB_geometries:
+                            print(f"Error: Missing ASH NEB data for image {imageid}")
+                            ashexit()
                     #print("Switch -1, writing out current NEB-path without CI")
                     with open("DLFIND_NEBpath_all.xyz", "a") as trajfile:
                         for imageid in list(range(1,self.nimage)):
@@ -390,12 +462,14 @@ class DLFIND_optimizerClass:
                             trajfile.write(f"Image {imageid}. Energy: {self.NEB_energies_dict[imageid]}  \n")
                             for el, cord in zip(self.fragment.elems, self.NEB_geometries[imageid]):
                                 trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
-                    with open("DLFIND_NEBpath_current.xyz", "w") as trajfile:
+                    with open("DLFIND_NEBpath_current.xyz.tmp", "w") as trajfile:
                         for imageid in list(range(1,self.nimage)):
                             trajfile.write(str(self.fragment.numatoms) + "\n")
                             trajfile.write(f"Image {imageid}. Energy: {self.NEB_energies_dict[imageid]}  \n")
                             for el, cord in zip(self.fragment.elems, self.NEB_geometries[imageid]):
                                 trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
+
+                    os.replace("DLFIND_NEBpath_current.xyz.tmp", "DLFIND_NEBpath_current.xyz")
 
                     # Writing out CI once it has been spawned
                     if nimage in self.NEB_geometries:
@@ -415,8 +489,17 @@ class DLFIND_optimizerClass:
                     #Storing current coordinates
                     #traj_coords.append(np.array(coordinates_ang))
                     print_if_level(f"Writing regular-opt traj",self.printlevel,1)
-                    write_xyzfile(self.fragment.elems, coordinates_ang, "DLFIND_opt_traj", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
-                    self.current_geo=coordinates_ang
+                    if self.ActiveRegion is True:
+                        # DL-FIND hands back active-region coordinates only: write the
+                        # active region on its own and the full system with the active
+                        # region updated
+                        write_xyzfile(self.act_elems, coordinates_ang, "DLFIND_opt_traj_Active", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
+                        full_coords_traj = self.actregion_to_full_coords(coordinates_ang)
+                        write_xyzfile(self.fragment.elems, full_coords_traj, "DLFIND_opt_traj", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
+                        self.current_geo=full_coords_traj
+                    else:
+                        write_xyzfile(self.fragment.elems, coordinates_ang, "DLFIND_opt_traj", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
+                        self.current_geo=coordinates_ang
                 # Unclear what switch 2 and 3 are...
                 elif switch == 2:
                     # print("switch 2")
@@ -448,6 +531,102 @@ class DLFIND_optimizerClass:
         self.dlf_get_gradient = functools.partial(ash_e_g_func, theory=self.theory)
         self.dlf_get_hessian = functools.partial(hess_func)
         self.dlf_put_coords = functools.partial( store_results, None)
+
+    # Number of variables DL-FIND optimizes: the active region if ActiveRegion is used,
+    # otherwise the whole fragment
+    def dlfind_nvar(self):
+        if self.ActiveRegion is True:
+            return len(self.actatoms)*3
+        return self.fragment.numatoms*3
+
+    # Scatter active-region coordinates (Angstrom) into a copy of the full-system coordinates
+    def actregion_to_full_coords(self, act_coords):
+        full_coords = np.array(self.fragment.coords)
+        for act_i, curr_i in zip(self.actatoms, act_coords):
+            full_coords[act_i] = curr_i
+        return full_coords
+
+    # Checks and preparation for the ActiveRegion option. Mirrors the geomeTRIC interface:
+    # only the active-region coordinates are handed to the optimizer (issue #520)
+    def setup_active_region_geometry(self):
+        if self.actatoms is None or len(self.actatoms) == 0:
+            print(BC.FAIL,"Error: ActiveRegion=True requires a non-empty actatoms list. Exiting.",BC.END)
+            ashexit()
+        if self.frozenatoms is not None and len(self.frozenatoms) > 0:
+            print(BC.FAIL,"Error: ActiveRegion=True and frozenatoms cannot both be used. Exiting.",BC.END)
+            ashexit()
+        if self.PBC is True:
+            print(BC.FAIL,"Error: ActiveRegion=True is not supported for periodic systems. Exiting.",BC.END)
+            ashexit()
+        if self.icoord >= 100:
+            print(BC.FAIL,f"Error: ActiveRegion=True is only supported for regular opt/tsopt jobs (icoord < 100), got icoord={self.icoord}. Exiting.",BC.END)
+            ashexit()
+        if self.fragment2 is not None:
+            print(BC.FAIL,"Error: ActiveRegion=True does not support a second fragment. Exiting.",BC.END)
+            ashexit()
+
+        # Sorting list, otherwise trouble
+        self.actatoms.sort()
+        largest_atom_index=max(self.actatoms)
+        if largest_atom_index >= self.fragment.numatoms:
+            print(BC.FAIL,f"Found active-atom index ({largest_atom_index}) that is larger or equal (>=) than the number of atoms of system ({self.fragment.numatoms})!",BC.END)
+            print(BC.FAIL,"This does not make sense. Please provide a correct actatoms list. Exiting.",BC.END)
+            ashexit()
+        if len(set(self.actatoms)) != len(self.actatoms):
+            print(BC.FAIL,"Error: actatoms list contains duplicate atom indices. Exiting.",BC.END)
+            ashexit()
+
+        # HDLC benefits from meaningful residue groups. If the caller did not
+        # supply them, reuse the PDB residue metadata already stored on Fragment.
+        # This matters for large ActiveRegion optimizations: treating the entire
+        # active region as one residue can make DL-FIND's constraint setup fail.
+        if self.residues is None:
+            pdb_resnames = getattr(self.fragment, "pdb_resnames", None)
+            pdb_residlabels = getattr(self.fragment, "pdb_residlabels", None)
+            pdb_chainlabels = getattr(self.fragment, "pdb_chainlabels", None)
+            residue_groups = None
+            if (pdb_resnames is not None and pdb_residlabels is not None
+                    and len(pdb_resnames) == self.fragment.numatoms
+                    and len(pdb_residlabels) == self.fragment.numatoms):
+                if pdb_chainlabels is None or len(pdb_chainlabels) != self.fragment.numatoms:
+                    pdb_chainlabels = [""] * self.fragment.numatoms
+                residue_atoms = {}
+                for atom_index, (chain, resid, resname) in enumerate(
+                        zip(pdb_chainlabels, pdb_residlabels, pdb_resnames)):
+                    residue_atoms.setdefault((chain, resid, resname), []).append(atom_index)
+                residue_groups = list(residue_atoms.values())
+            else:
+                # Fragment(pdbfile=...) commonly stores PDB metadata as an
+                # OpenMM topology instead of the parallel pdb_* arrays.
+                topology = getattr(self.fragment, "pdb_topology", None)
+                if topology is not None:
+                    topology_groups = [
+                        [atom.index for atom in residue.atoms()]
+                        for residue in topology.residues()
+                    ]
+                    topology_groups = [group for group in topology_groups if group]
+                    topology_indices = sorted(index for group in topology_groups for index in group)
+                    if topology_indices == list(range(self.fragment.numatoms)):
+                        residue_groups = topology_groups
+            if residue_groups:
+                self.residues = residue_groups
+                print(f"Using {len(self.residues)} residue groups from PDB metadata for DL-FIND.")
+
+        print("ActiveRegion option is True. Passing only active-region coordinates to DL-FIND.")
+        print("Number of active atoms:", len(self.actatoms))
+        print("Number of atoms in full system:", self.fragment.numatoms)
+        self.act_coords, self.act_elems = self.fragment.get_coords_for_atoms(self.actatoms)
+
+        # A NumFreq Hessian has to cover the active region, so default the Hessian atoms
+        # to the active region if the user did not choose a smaller set
+        if self.hessian_choice == "numfreq" and self.numfreq_hessatoms is None:
+            print("ActiveRegion is True and no numfreq_hessatoms chosen: using the active region for the NumFreq Hessian.")
+            self.numfreq_hessatoms=self.actatoms
+        if self.numfreq_hessatoms is not None:
+            outside = [i for i in self.numfreq_hessatoms if i not in self.actatoms]
+            if len(outside) > 0:
+                print(BC.FAIL,f"Error: numfreq_hessatoms contains atoms outside the active region: {outside}. Exiting.",BC.END)
+                ashexit()
 
     # Should be run only once
     def setup_PBC(self):
@@ -502,6 +681,62 @@ class DLFIND_optimizerClass:
 
         # What to optimize etc.
         self.spec=[]
+
+        # ActiveRegion: DL-FIND is given the active region only, so every atom it sees is
+        # active. Residue and constraint atom indices are re-indexed into the active region
+        if self.ActiveRegion is True:
+            numatoms=len(self.actatoms)
+            if self.residues is None:
+                self.spec=[1 for i in range(numatoms)]
+            else:
+                # Residues are given in full-system indices. Keep only the residues that
+                # the active atoms belong to and renumber them 1,2,3,... for DL-FIND
+                resid_map={}
+                for full_i in self.actatoms:
+                    resid=search_list_of_lists_for_index(full_i,self.residues)
+                    if resid is None:
+                        print(BC.FAIL,f"Error: active atom {full_i} was not found in any of the provided residues. Exiting.",BC.END)
+                        ashexit()
+                    if resid not in resid_map:
+                        resid_map[resid]=len(resid_map)+1
+                    self.spec.append(resid_map[resid])
+                print_if_level(f"Active-region residues (DL-FIND numbering): {resid_map}", self.printlevel,2)
+
+            # Nuclear charges of the active region
+            self.spec=self.spec + elemstonuccharges(self.act_elems)
+
+            # Constraints, re-indexed into the active region
+            self.numcons=0
+            if self.constraints is not None:
+                print_if_level(f"Constraints passed to DL-FIND: {self.constraints}", self.printlevel,2)
+                conlist=[]
+                for k,v in self.constraints.items():
+                    if k in ('bond','distance'):
+                        natoms_con=2; contype=1
+                    elif k == 'angle':
+                        natoms_con=3; contype=2
+                    elif k in ('dihedral','torsion'):
+                        natoms_con=4; contype=3
+                    else:
+                        print(BC.FAIL,f"Error: constraint type '{k}' is not supported with ActiveRegion=True. Exiting.",BC.END)
+                        ashexit()
+                    for x in v:
+                        outside=[i for i in x[:natoms_con] if i not in self.actatoms]
+                        if len(outside) > 0:
+                            print(BC.FAIL,f"Error: constraint {k} {x} involves atoms outside the active region: {outside}. Exiting.",BC.END)
+                            ashexit()
+                        indices=[fullindex_to_actindex(i,self.actatoms)+1 for i in x[:natoms_con]]
+                        indices=indices + [0]*(4-natoms_con)
+                        conlist += [contype] + indices
+                        self.numcons+=1
+                print_if_level(f"DL-FIND constraints-list: {conlist}", self.printlevel,2)
+                self.spec = self.spec + conlist
+
+            # Spec (microiterative) not used for now
+            self.spec = self.spec + [1 for i in range(numatoms)]
+            self.nspec=len(self.spec)
+            print("DL-FIND spec list:", self.spec)
+            return
 
         if self.PBC:
             allatoms = self.fragment.allatoms + [self.fragment.numatoms, self.fragment.numatoms+1, self.fragment.numatoms+2, self.fragment.numatoms+3]
@@ -651,6 +886,11 @@ class DLFIND_optimizerClass:
         # Converting coordinates from Angstrom to Bohr
         positions = self.fragment.coords * 1.88972612546
         nz = self.fragment.numatoms
+        if self.ActiveRegion is True:
+            # Only the active region is handed to DL-FIND
+            act_coords, act_elems = self.fragment.get_coords_for_atoms(self.actatoms)
+            positions = act_coords * 1.88972612546
+            nz = len(self.actatoms)
         if self.PBC:
             print("Preparing for PBC optimization. Using aligned coordinates with 4 dummy atoms")
             print("self.DLFIND_coords:", self.DLFIND_coords)
@@ -673,24 +913,29 @@ class DLFIND_optimizerClass:
                                                   iopt=self.iopt, maxcycle=self.maxcycle,tolerance=self.tolerance,
                                                   tolerance_e=self.tolerance_e, inithessian=self.inithessian,
                                                   nframe=nframe, nz=nz,
-                                                  ncons=self.numcons, delta=self.delta,
+                                                  ncons=self.numcons, delta=self.delta, dump=self.dump, restart=self.restart,
                                                   spec=self.spec, printl=self.printlevel, nimage=self.nimage)
 
-        # Delete old traj file before beginning
-        remove_files=['DLFIND_opt_traj.xyz','DLFIND_dimertraj_1.xyz', 'DLFIND_dimertraj_2.xyz','DLFIND_dimertraj_3.xyz','DLFIND_NEBpath_current.xyz', 'DLFIND_NEBpath_all.xyz', 'DLFIND_CIgeo_traj.xyz']
-        print_if_level(f"Removing possible old files: {remove_files}", self.printlevel,2)
-        for rfile in remove_files:
-            try:
-                os.remove(rfile)
-                print_if_level(f"removed {rfile} ", self.printlevel,2)
-            except FileNotFoundError:
-                #print(f"file {rfile} not found")
-                pass
+        # Delete old traj files before beginning, unless this is a restart
+        remove_files=['DLFIND_opt_traj.xyz','DLFIND_opt_traj_Active.xyz','DLFIND_dimertraj_1.xyz', 'DLFIND_dimertraj_2.xyz','DLFIND_dimertraj_3.xyz','DLFIND_NEBpath_current.xyz', 'DLFIND_NEBpath_all.xyz', 'DLFIND_CIgeo_traj.xyz']
+
+        if self.restart in (None,0):
+            print_if_level(f"Removing possible old files: {remove_files}", self.printlevel,2)
+            for rfile in remove_files:
+                try:
+                    os.remove(rfile)
+                    print_if_level(f"removed {rfile} ", self.printlevel,2)
+                except FileNotFoundError:
+                    pass
+        else:
+            print_if_level("Restart requested. Keeping existing DL-FIND files.", self.printlevel,2)
 
         print_if_level(f"\nArguments passed to DL-FIND:", self.printlevel,2)
         print_if_level(f"icoord: {self.icoord}", self.printlevel,2)
         print_if_level(f"iopt: {self.iopt}", self.printlevel,2)
         print_if_level(f"maxcycle: {self.maxcycle}", self.printlevel,2)
+        print_if_level(f"dump: {self.dump}", self.printlevel,2)
+        print_if_level(f"restart: {self.restart}", self.printlevel,2)
         print_if_level(f"spec ({len(self.spec)}): {self.spec}", self.printlevel,2)
         if self.icoord == 120:
             print_if_level(f"NEB nimage: {self.nimage}", self.printlevel,2)
@@ -706,6 +951,46 @@ class DLFIND_optimizerClass:
         self.dlfind_dimer_cycles = 0
         self.NEB_energies_dict={}
         self.NEB_geometries={}
+
+        # Restore ASH NEB bookkeeping on restart
+        if self.restart not in (None,0) and 100 <= self.icoord < 150:
+            # Restore previous ASH NEB cycle count
+            if os.path.isfile("DLFIND_NEBpath_all.xyz"):
+                with open("DLFIND_NEBpath_all.xyz") as f:
+                    self.dlfind_neb_cycles = sum(1 for line in f if line.startswith("Image 1."))
+                print(f"Restart: restored ASH NEB cycle counter to {self.dlfind_neb_cycles}")
+
+            # Restore energies/geometries of the most recent complete NEB path
+            if os.path.isfile("DLFIND_NEBpath_current.xyz"):
+                print("Restart: restoring ASH NEB energies/geometries from DLFIND_NEBpath_current.xyz")
+                with open("DLFIND_NEBpath_current.xyz") as f:
+                    lines = f.readlines()
+
+                i = 0
+                while i < len(lines):
+                    natoms = int(lines[i].strip())
+                    header = lines[i + 1].split()
+                    imageid = int(header[1].rstrip("."))
+                    energy = float(header[3])
+
+                    coords = []
+                    for j in range(natoms):
+                        parts = lines[i + 2 + j].split()
+                        coords.append([float(parts[1]), float(parts[2]), float(parts[3])])
+
+                    self.NEB_energies_dict[imageid] = energy
+                    self.NEB_geometries[imageid] = np.array(coords)
+
+                    i += natoms + 2
+
+                print("Restored NEB images:", sorted(self.NEB_energies_dict.keys()))
+
+                expected_images = set(range(1,self.nimage))
+                restored_images = set(self.NEB_energies_dict.keys())
+                missing_images = expected_images - restored_images
+                if len(missing_images) > 0:
+                    print(f"Error: Missing NEB restart data for images: {sorted(missing_images)}")
+                    ashexit()
 
         # Runcounter 
         self.runcounter=0
@@ -755,6 +1040,13 @@ class DLFIND_optimizerClass:
             # Update constraints if provided
         if constraints is not None:
             self.constraints=constraints
+
+        # ActiveRegion: checks and reduced-system setup. Must come after PBC detection
+        # since it is not supported for periodic systems
+        if self.ActiveRegion is True:
+            self.setup_active_region_geometry()
+            nvarin=len(self.actatoms) * 3
+            nvarin2=0
 
         if self.runcounter == 0:
             self.print_settings()
@@ -819,6 +1111,10 @@ class DLFIND_optimizerClass:
                 self.fragment.print_system(filename='Fragment-optimized.ygg')
                 self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
                 self.fragment.set_energy(finalenergy)
+                if self.ActiveRegion is True:
+                    # Active region on its own, as the geomeTRIC interface does
+                    act_coords_final, act_elems_final = self.fragment.get_coords_for_atoms(self.actatoms)
+                    write_xyzfile(act_elems_final, act_coords_final, "Fragment-optimized_Active", printlevel=self.printlevel)
                 print("Final geometry")
                 self.fragment.print_coords()
 

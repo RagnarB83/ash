@@ -3,9 +3,18 @@
 **NEW:**
 ![example branch parameter](https://github.com/RagnarB83/ash/actions/workflows/python-app-conda.yml/badge.svg?branch=NEW)
 
-<img src="ash-simple-logo-letterbig.png" alt="drawing" width="300" align="right"/>
+<img src="ash-simple-logo-letterbig.png" alt="drawing" width="200" align="right"/>
 
  # ASH: a multi-scale, multi-theory modelling program
+
+**Updates**
+
+24. Nov 2026. The master branch of ASH has now undergone a major update where major bugs were fixed and various improvements have been made as well as many new features. Importantly a number of tests have been added that should prevent  some future bugs from occurring, particularly for hybrid theories. Currently the documentation is lagging behind but this will be fixed.
+
+Note: if you have been using electrostatic embedding QM/MM with a covalent QM-MM boundary then the current ASH version will give you different energies and gradients compared to previous versions. Current ASH master should be considered correct. In a few days, we will label a version for 1.0 release.
+
+**About**
+
 ASH is a Python-based computational chemistry and QM/MM environment for molecular calculations in the gas phase, explicit solution, crystal or protein environment. It's a program for performing single-point calculations, geometry optimizations, nudged elastic band calculations, surface scans, molecular dynamics, numerical frequencies and many other things using a MM, QM, QM/MM or ONIOM Hamiltonian.
 Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, ccpy, Psi4, Dalton, CFour, TeraChem, QUICK. Interface to the OpenMM library for MM and MD algorithms. Interfaces to specialized high-level QM codes like Block, Dice and ipie for DMRG, SHCI and AFQMC calculations. Interfaces to machine-learning libraries like PyTorch, MACE and MLatom for using and training machine learning potentials.
 Excellent environment for writing simple or complex computational chemistry workflows.
@@ -14,7 +23,7 @@ Excellent environment for writing simple or complex computational chemistry work
 
 If ASH is useful in your research please cite us: 
 `ASH: a Multi-scale, Multi-theory Modeling program <https://onlinelibrary.wiley.com/doi/10.1002/jcc.70359>`_
-R. Bjornsson, J. Comput. Chem 2026, 47, e70359.
+R. Bjornsson, J. Comput. Chem. 2026, 47, e70359.
 
 **In case of problems:**
 Please open an issue on Github and we will try to fix any problems as soon as possible.

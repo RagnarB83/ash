@@ -587,6 +587,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     filenames=[frag.label for frag in fragments]
 
     #Now looping over fragments
+    print("Looping over fragments to do calculations")
     for fragment in fragments:
         filename=fragment.label
         print("filename:", filename)
@@ -1496,7 +1497,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         print(f"Excited-state SCF energy {state_index}: {states_dict[state_index][0]} Eh")
         print(f"Excited-state SCF transition energy: {(states_dict[state_index][0]-E_GS)*27.211399:3.2f} eV")
         print(f"Excited-state SCF orbital rotation: Occ:{states_dict[state_index][1]} Virt:{states_dict[state_index][2]}")
-        print(f"Rotation in spin manifold: ", states_dict[state_index][3])
+        print("Rotation in spin manifold: ", states_dict[state_index][3])
         print(f"Excited-state SCF HOMO-LUMO gap: {states_dict[state_index][4]} Eh ({states_dict[state_index][4]*27.211399}) eV: ")
         print(f"Excited-state SCF Levelshift chosen: {states_dict[state_index][5]}")
         print("-"*5)
