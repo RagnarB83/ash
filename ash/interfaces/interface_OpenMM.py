@@ -5,6 +5,7 @@ import numpy as np
 import glob
 import copy
 import itertools
+from os import PathLike
 
 #import ash
 import ash.constants
@@ -33,6 +34,28 @@ from ash.interfaces.interface_openbabel import pdb_to_smiles,xyz_to_pdb_with_con
 # Options supported by OpenMM_MDclass.set_sim_reporters. Keep this list next to
 # the implementation so invalid values fail before a potentially long run.
 valid_trajectory_file_options = ('PDB', 'DCD', 'NetCDFReporter', 'HDF5Reporter', 'XYZ')
+
+
+def _normalize_charmm_files(*file_groups):
+    """Flatten CHARMM file arguments while preserving their declared order."""
+    files = []
+    for group in file_groups:
+        if group is None:
+            continue
+        if isinstance(group, (str, PathLike)):
+            files.append(os.fspath(group))
+            continue
+        try:
+            entries = iter(group)
+        except TypeError as exc:
+            raise TypeError("CHARMM topology and parameter files must be paths or iterables of paths") from exc
+        for entry in entries:
+            if not isinstance(entry, (str, PathLike)):
+                raise TypeError("Each CHARMM topology or parameter entry must be a path")
+            files.append(os.fspath(entry))
+    return files
+
+
 # PDB residue names commonly used for standard amino acids and frequent
 # force-field variants. Users can pass a custom set for other residue names.
 _PROTEIN_RESIDUE_NAMES = {
@@ -268,6 +291,7 @@ class OpenMMTheory:
             if self.printlevel > 0:
                 print("Reading CHARMM files.")
             self.psffile = psffile
+            charmm_files = _normalize_charmm_files(charmmtopfile, charmmprmfile)
             if use_parmed is True:
                 import parmed
                 if self.printlevel > 0:
@@ -275,7 +299,7 @@ class OpenMMTheory:
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
                 #Permissive True means less restrictive about atomtypes
                 #Removed , permissive=True, no longer in parmed
-                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                self.params = parmed.charmm.CharmmParameterSet(*charmm_files)
                 # Grab resnames from psf-object. Different for parmed object
                 # Note: OpenMM uses 0-indexing
                 self.resnames = [self.psf.atoms[i].residue.name for i in range(0, len(self.psf.atoms))]
@@ -292,7 +316,7 @@ class OpenMMTheory:
             else:
                 # Load CHARMM PSF files via native routine.
                 self.psf = openmm.app.CharmmPsfFile(psffile)
-                self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile, permissive=True)
+                self.params = openmm.app.CharmmParameterSet(*charmm_files, permissive=True)
                 # Grab resnames from psf-object
                 self.resnames = [self.psf.atom_list[i].residue.resname for i in range(0, len(self.psf.atom_list))]
                 self.resids = [self.psf.atom_list[i].residue.idx for i in range(0, len(self.psf.atom_list))]
