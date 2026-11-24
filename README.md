@@ -9,7 +9,7 @@
 
 **Updates**
 
-25. Nov 2026. The master branch of ASH has now undergone a major update where major bugs were fixed and various improvements have been made as well as many new features. Importantly a number of tests have been added that should prevent  some future bugs from occurring, particularly for hybrid theories. Currently the documentation is lagging behind but this will be fixed.
+24. Nov 2026. The master branch of ASH has now undergone a major update where major bugs were fixed and various improvements have been made as well as many new features. Importantly a number of tests have been added that should prevent  some future bugs from occurring, particularly for hybrid theories. Currently the documentation is lagging behind but this will be fixed.
 
 Note: if you have been using electrostatic embedding QM/MM with a covalent QM-MM boundary then the current ASH version will give you different energies and gradients compared to previous versions. Current ASH master should be considered correct. In a few days, we will label a version for 1.0 release.
 
